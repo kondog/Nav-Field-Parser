@@ -1,3 +1,4 @@
+# encoding: utf-8
 require "test/unit"
 require "./nav_parser.rb"
 require "strscan"
@@ -19,23 +20,45 @@ class TC_NAV_P < Test::Unit::TestCase
     assert_equal('Code20', @nav.parse_type( 'Code20        ;'))
   end
 
-  def test_parse_caption
+  def test_parse_caption_1_Langage
     assert_equal( 'CaptionML=ENU=Package Code', @nav.parse_caption(<<'EOS'))
                                                CaptionML=ENU=Package Code }
+EOS
+  end
+
+
+  def test_parse_caption_1_Langage2
+    assert_equal( 'CaptionML=ENU=Package Code', @nav.parse_caption(<<'EOS'))
+                                               CaptionML=ENU=Package Code ;
+EOS
+  end
+
+  def test_parse_caption_2_Langage
+    assert_equal( 'CaptionML=[ENU=Package Code;JPN=あああ]', @nav.parse_caption(<<'EOS'))
+                                               CaptionML=[ENU=Package Code;
+                                                         JPN=あああ] };
+EOS
+  end
+
+  def test_parse_caption_end_with_semicolon
+    assert_equal( 'CaptionML=[ENU=Package Code;JPN=あああ]', @nav.parse_caption(<<'EOS'))
+                                               CaptionML=[ENU=Package Code;
+                                                         JPN=あああ] ;
 EOS
   end
 
   def test_each_fields_parse
     @nav.parse_each_fields(<<'EOS')
 { 1   ;   ;Package Code        ;Code20        ;TableRelation="Config. Package";
-                                               CaptionML=ENU=Package Code }
+                                               CaptionML=[ENU=Package Code;
+                                                          JPN=あああ] }
 EOS
     assert_equal( 
                  {:ID      => '1',
                   :Enable  => '',
                   :Name    => 'Package Code',
                   :Type    => 'Code20', 
-                  :Caption => 'CaptionML=ENU=Package Code'
+                  :Caption => 'CaptionML=[ENU=Package Code;JPN=あああ]'
                  }, 
                 @nav.fields[0] 
                 )
@@ -44,7 +67,8 @@ EOS
   def test_fields_parse
     @nav.parse_fields(<<'EOS')
     { 1   ;   ;Package Code        ;Code20        ;TableRelation="Config. Package";
-                                                   CaptionML=ENU=Package Code }
+                                                   CaptionML=[ENU=Package Code;
+                                                              JPN=パッケージコード] }
     { 2   ;   ;Table ID            ;Integer       ;TableRelation=Object.ID WHERE (Type=CONST(Table));
                                                    OnValidate=BEGIN
                                                                 IF ConfigMgt.IsSystemTable("Table ID") THEN
@@ -60,12 +84,14 @@ EOS
                                                                 VALIDATE("Table ID");
                                                             END;
 
-                                                   CaptionML=ENU=Table ID;
+                                                   CaptionML=[ENU=Table ID;
+                                                              JPN=テーブルID];
                                                    NotBlank=Yes }
     { 3   ;   ;Table Name          ;Text250       ;FieldClass=FlowField;
                                                    CalcFormula=Lookup(AllObjWithCaption."Object Name" WHERE (Object Type=CONST(Table),
                                                                                                              Object ID=FIELD(Table ID)));
-                                                   CaptionML=ENU=Table Name;
+                                                   CaptionML=[ENU=Table Name;
+                                                              JPN=テーブル名];
                                                    Editable=No }
 EOS
     assert_equal( 
@@ -73,7 +99,7 @@ EOS
                   :Enable  => '',
                   :Name    => 'Package Code',
                   :Type    => 'Code20', 
-                  :Caption => 'CaptionML=ENU=Package Code'
+                  :Caption => 'CaptionML=[ENU=Package Code;JPN=パッケージコード]'
                  }, 
                 @nav.fields[0] 
                 )
@@ -82,7 +108,7 @@ EOS
                   :Enable  => '',
                   :Name    => 'Table ID',
                   :Type    => 'Integer', 
-                  :Caption => 'CaptionML=ENU=Table ID'
+                  :Caption => 'CaptionML=[ENU=Table ID;JPN=テーブルID]'
                  }, 
                 @nav.fields[1] 
                 )
@@ -91,7 +117,7 @@ EOS
                   :Enable  => '',
                   :Name    => 'Table Name',
                   :Type    => 'Text250', 
-                  :Caption => 'CaptionML=ENU=Table Name'
+                  :Caption => 'CaptionML=[ENU=Table Name;JPN=テーブル名]'
                  }, 
                 @nav.fields[2] 
                 )

@@ -27,8 +27,11 @@ class NavParser
   end
   def parse_caption( str )
     scanner = StringScanner.new( str )
-    scanner.scan(/\s+/)
-    str_include_trash = scanner.scan_until(/[;}]/)
+    str_include_trash = ""
+    while !scanner.check_until(/[;}]/).nil?
+      scanner.scan(/\s+/)
+      str_include_trash += scanner.scan_until(/[;}]/)
+    end
     while str_include_trash[-1] =~ /[\s;}]/
       str_include_trash.slice!(-1)
     end
@@ -57,12 +60,19 @@ class NavParser
     type   = parse_type(scanner.scan_until( /;/ ))
     caption = nil
     while !scanner.eos?
-      str_until_semicolon = scanner.scan_until( /[;}]/ )
+      str_until_semicolon = scanner.check_until( /[;}]/ )
       case 
       when str_until_semicolon.nil?
         break
       when str_until_semicolon.include?( "CaptionML" )
-        caption = parse_caption(str_until_semicolon)
+        str_until_semicolon = scanner.scan_until( /[;}]/ )
+        if !scanner.check_until(/[;}]/m).nil?
+          caption = parse_caption(str_until_semicolon + scanner.scan_until(/[;}]/m))
+        else
+          caption = parse_caption(str_until_semicolon)
+        end
+      else
+        str_until_semicolon = scanner.scan_until( /[;}]/ )
       end
     end
     @fields << {:ID => id, :Enable => "", :Name => name, :Type => type, :Caption => caption }
